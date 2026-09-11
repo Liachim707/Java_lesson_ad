@@ -50,40 +50,71 @@ public class Main {
         }
     }
 
+    public static Rect find(
+            String templateFile,
+            double accuracy,
+            Rectangle searchArea
+    ) throws Exception {
 
-    public static Rect find(String templateFile, int match_method) throws Exception {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        if (match_method == -1){
-            match_method = Imgproc.TM_CCORR_NORMED;
-        }
-        saveScreen(0, 0, 1000, 1000);
-        Mat img = Imgcodecs.imread("screen.png");
-        Mat templ = Imgcodecs.imread(templateFile);
 
-        int result_cols = img.cols() - templ.cols() + 1;
-        int result_rows = img.rows() - templ.rows() + 1;
+        // Если не задана область поиска — ищем по всей картинке
+        Mat srcImg = null;
+        if (searchArea == null) {
+            saveScreen(0, 0, 1920, 1080); // либо используйте нужные размеры экрана
+            srcImg = Imgcodecs.imread("screen.png");
+        } else {
+            saveScreen(
+                    searchArea.x,
+                    searchArea.y,
+                    searchArea.width,
+                    searchArea.height
+            );
+            srcImg = Imgcodecs.imread("screen.png");
+            // Если сохранён скрин меньшего размера, учтите масштаб!
+            // Для упрощения предположим, что скрин сохранён с нужными размерами
+        }
+
+        Mat templ = Imgcodecs.imread(templateFile);
+        Mat mask = new Mat(templ.size(), CvType.CV_8UC3, new Scalar(255, 255, 255));
+        rectangle(mask, new org.opencv.core.Point(8, 9), new org.opencv.core.Point(templ.cols()-8, templ.rows()-9), new Scalar(0), -1);
+
+        int result_cols = srcImg.cols() - templ.cols() + 1;
+        int result_rows = srcImg.rows() - templ.rows() + 1;
         Mat result = new Mat(result_rows, result_cols, CvType.CV_32FC1);
 
+        Imgproc.matchTemplate(
+                srcImg,
+                templ,
+                result,
+                Imgproc.TM_CCORR_NORMED,
+                mask
+        );
 
-        Imgproc.matchTemplate(img, templ, result, match_method);
         Core.MinMaxLocResult mmr = Core.minMaxLoc(result);
 
-        org.opencv.core.Point matchLoc;
-        double best_result = 0.0;
-        if (match_method == Imgproc.TM_SQDIFF
-                || match_method == Imgproc.TM_SQDIFF_NORMED) {
-            matchLoc = mmr.minLoc;
-            best_result = 1 + mmr.minVal;
-        } else {
-            matchLoc = mmr.maxLoc;
-            best_result = mmr.maxVal;
-        }
-        if (best_result < 0.9991){
-            throw new Exception(templateFile + " Не найдено! Лучшее совпадение:" + (mmr.maxVal * 100));
-        }
-        return new Rect((int) matchLoc.x, (int) matchLoc.y, templ.cols(),  templ.rows());
+        org.opencv.core.Point matchLoc = mmr.maxLoc;
+        double bestResult = mmr.maxVal;
 
+        if (bestResult < accuracy) {
+            throw new Exception(
+                    templateFile + " не найдено! Лучшее совпадение: " + (bestResult * 100)
+            );
+        }
+
+        // Нужно учесть, что если область поиска не null, координаты matchLoc уже относительно нижнего левого угла searchArea
+        int screenX = (searchArea == null) ? (int) matchLoc.x : searchArea.x + (int) matchLoc.x;
+        int screenY = (searchArea == null) ? (int) matchLoc.y : searchArea.y + (int) matchLoc.y;
+
+        return new Rect(
+                screenX,
+                screenY,
+                templ.cols(),
+                templ.rows()
+        );
     }
+
+
 
 
     public static Rect find_with_mask(String templateFile) throws Exception {
