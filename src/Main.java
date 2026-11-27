@@ -81,6 +81,8 @@ public class Main {
     private static void addButton(JPanel panel, String text, CalculatorModel model) {
         JButton button = new JButton(text);
         button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+        button.setFocusPainted(false);
+        button.setFocusable(false);
         button.addActionListener(event -> {
             model.press(text);
             display.setText(model.getDisplay());
