@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ru.homework</groupId>
-    <artifactId>java-opencv-template-matching</artifactId>
+    <artifactId>Java_lesson_ad</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>

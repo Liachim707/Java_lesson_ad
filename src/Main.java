@@ -169,7 +169,7 @@ public class Main {
     }
 
     /**
-     * Ищет изображение на экране. accuracy — минимальная точность совпадения
+     * Ищет изображение на экране. Accuracy — минимальная точность совпадения
      * от 0.0 до 1.0; searchArea — область экрана или null для всего экрана.
      */
     public static Rect find(String templateFile, double accuracy, Rectangle searchArea) throws Exception {
